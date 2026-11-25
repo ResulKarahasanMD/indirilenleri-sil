@@ -7,7 +7,7 @@ import Testing
 ///
 /// The window server is asked, not the window: `NSWindow.isVisible` says yes for a panel that is
 /// waiting for its app to become active.
-@Suite("İlerleme paneli", .enabled(if: Screen.isInUse, "ekran kilitli ya da uykuda: pencere çizilmez"))
+@Suite("Progress panel", .enabled(if: Screen.isInUse, "screen locked or asleep: windows are not drawn"))
 @MainActor
 struct ProgressPanelTests {
     init() {
@@ -15,7 +15,7 @@ struct ProgressPanelTests {
         NSApplication.shared.setActivationPolicy(.accessory)
     }
 
-    @Test("Uygulama etkin değilken de ekrandadır ve odağı almaz")
+    @Test("It is on screen even while the app is inactive, and does not take focus")
     func onScreenWhileTheAppIsInactive() async throws {
         try #require(!NSApplication.shared.isActive)
 
@@ -28,7 +28,7 @@ struct ProgressPanelTests {
         #expect(!NSApplication.shared.isActive)
     }
 
-    @Test("Kapatıldıktan sonra gecikmeli gösterim paneli geri getirmez")
+    @Test("Once closed, a delayed show does not bring the panel back")
     func staysClosed() async throws {
         let panel = ProgressPanel(title: "Taranıyor…", onStop: {})
         panel.show(after: 0.1)

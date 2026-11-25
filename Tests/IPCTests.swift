@@ -1,9 +1,9 @@
 import Foundation
 import Testing
 
-@Suite("Uzantı → uygulama iletisi")
+@Suite("Extension → app message")
 struct IPCTests {
-    @Test("Zor adlı yollar bozulmadan taşınır")
+    @Test("Paths with difficult names are carried intact")
     func evictRequestKeepsAwkwardPaths() throws {
         let paths = [
             "/Users/u/Library/Mobile Documents/com~apple~CloudDocs/8. DOSYA",
@@ -17,20 +17,20 @@ struct IPCTests {
         #expect(IPC.request(from: url, expectedToken: "abc123") == .evict(paths))
     }
 
-    @Test("Yol taşımayan istekler türünü korur", arguments: [IPC.Request.finderSelection, .finderFolder])
+    @Test("Requests that carry no paths keep their kind", arguments: [IPC.Request.finderSelection, .finderFolder])
     func pathlessRequestsRoundTrip(request: IPC.Request) throws {
         let url = try #require(IPC.url(for: request, token: "abc123"))
         #expect(IPC.request(from: url, expectedToken: "abc123") == request)
     }
 
-    @Test("Yanlış token'lı istek reddedilir", arguments: [IPC.Request.evict(["/a"]), .finderSelection, .finderFolder])
+    @Test("A request with the wrong token is rejected", arguments: [IPC.Request.evict(["/a"]), .finderSelection, .finderFolder])
     func wrongTokenIsRejected(request: IPC.Request) throws {
         let url = try #require(IPC.url(for: request, token: "good"))
         #expect(IPC.request(from: url, expectedToken: "bad") == nil)
         #expect(IPC.request(from: url, expectedToken: "") == nil)
     }
 
-    @Test("Yabancı ya da bozuk URL reddedilir", arguments: [
+    @Test("A foreign or malformed URL is rejected", arguments: [
         "indirilenlerisil://evict?p=/a",
         "indirilenlerisil://finder-selection",
         "indirilenlerisil://other?t=good&p=/a",
@@ -42,7 +42,7 @@ struct IPCTests {
         #expect(IPC.request(from: try #require(URL(string: url)), expectedToken: "good") == nil)
     }
 
-    @Test("Yolsuz bırakma isteği ve boş token URL üretmez")
+    @Test("An evict request without paths and an empty token produce no URL")
     func nothingToSend() {
         #expect(IPC.url(for: .evict([]), token: "good") == nil)
         #expect(IPC.url(for: .evict(["/a"]), token: "") == nil)

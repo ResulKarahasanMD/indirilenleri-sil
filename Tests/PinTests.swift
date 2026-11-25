@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@Suite("İndirileni Tut işareti")
+@Suite("Keep Downloaded marker")
 struct PinTests {
     let home: TempHome
 
@@ -12,7 +12,7 @@ struct PinTests {
         #expect(setxattr(path, PinCache.marker, one, 1, 0, 0) == 0)
     }
 
-    @Test("Öğenin kendisindeki işaret sayılır")
+    @Test("A marker on the item itself counts")
     func markerOnTheItem() throws {
         let marked = try home.file("Desktop/serbest/c.bin")
         let plain = try home.file("Desktop/serbest/b.bin")
@@ -23,7 +23,7 @@ struct PinTests {
         #expect(!pins.isPinned(plain, inside: home.path))
     }
 
-    @Test("Üst klasördeki işaret içindekilere geçer")
+    @Test("A marker on a parent folder carries over to its contents")
     func markerOnAnAncestor() throws {
         let inside = try home.file("Desktop/tut/alt/daha alt/a.bin")
         let sibling = try home.file("Desktop/tut/alt/b.bin")
@@ -36,7 +36,7 @@ struct PinTests {
         #expect(!pins.isPinned(outside, inside: home.path))
     }
 
-    @Test("Sınırın dışındaki klasörlere bakılmaz")
+    @Test("Folders outside the boundary are not looked at")
     func ancestorsOutsideTheBoundaryAreNotConsulted() throws {
         // "ev" is the boundary; "evim" only shares its first letters.
         let boundary = try home.folder("Desktop/ev")

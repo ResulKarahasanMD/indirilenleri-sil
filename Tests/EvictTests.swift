@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@Suite("Bırakma")
+@Suite("Eviction")
 struct EvictTests {
     let home: TempHome
 
@@ -26,7 +26,7 @@ struct EvictTests {
 
     // MARK: Counting
 
-    @Test("Diskten kalkan dosyalar bırakıldı sayılır ve kayda geçer")
+    @Test("Files that leave the disk count as evicted and are logged")
     func confirmedEvictionsAreCounted() throws {
         let items = try candidates("a.bin", "b.bin", "c.bin")
         let cloud = FakeCloud()
@@ -43,7 +43,7 @@ struct EvictTests {
         #expect(result.errors.isEmpty)
     }
 
-    @Test("Geç tamamlanan bırakma beklenir")
+    @Test("A late-completing eviction is waited for")
     func slowEvictionIsWaitedFor() throws {
         let items = try candidates("a.bin")
         var script = FakeCloud.Script()
@@ -54,7 +54,7 @@ struct EvictTests {
         #expect(result.evicted == Tally(count: 1, bytes: 4096))
     }
 
-    @Test("Verisi diskte kalan dosya bırakıldı sayılmaz")
+    @Test("A file whose data stays on disk does not count as evicted")
     func dataStillOnDiskIsNotCounted() throws {
         let items = try candidates("kalan.bin", "giden.bin")
         var script = FakeCloud.Script()
@@ -69,7 +69,7 @@ struct EvictTests {
         #expect(rows.first { $0.path == items[0].path }?.action == "evict_noop")
     }
 
-    @Test("Çalışma sırasında kaybolan dosya bırakıldı sayılmaz")
+    @Test("A file that disappears during the run does not count as evicted")
     func vanishedFileIsNotCounted() throws {
         let items = try candidates("taşınan.bin", "giden.bin")
         var script = FakeCloud.Script()
@@ -84,7 +84,7 @@ struct EvictTests {
         #expect(rows.first { $0.path == items[0].path }?.action == "missing")
     }
 
-    @Test("Taramadan sonra silinen dosya için istek gönderilmez")
+    @Test("No request is sent for a file deleted after the scan")
     func fileGoneBeforeTheRequestIsNotRequested() throws {
         let items = try candidates("silinen.bin")
         try FileManager.default.removeItem(atPath: items[0].path)
@@ -97,7 +97,7 @@ struct EvictTests {
         #expect(result.evicted.count == 0)
     }
 
-    @Test("Taramadan sonra boşalan dosya için istek gönderilmez")
+    @Test("No request is sent for a file emptied after the scan")
     func fileEmptiedAfterTheScanIsNotRequested() throws {
         let items = try candidates("boşalan.bin")
         try Data().write(to: URL(fileURLWithPath: items[0].path))
@@ -112,7 +112,7 @@ struct EvictTests {
 
     // MARK: Refusals and changes
 
-    @Test("Taramadan sonra durumu değişen dosya atlanır")
+    @Test("A file whose state changed after the scan is skipped")
     func changedItemIsSkipped() throws {
         let items = try candidates("düzenlenen.bin")
         var script = FakeCloud.Script()
@@ -127,7 +127,7 @@ struct EvictTests {
         #expect(result.refused.isEmpty)
     }
 
-    @Test("iCloud'un reddi 'durumu değişti' değil 'reddedildi' diye sayılır")
+    @Test("An iCloud refusal counts as 'refused', not 'state changed'")
     func refusalIsNotAChange() throws {
         let items = try candidates("reddedilen.bin")
         var script = FakeCloud.Script()
@@ -146,7 +146,7 @@ struct EvictTests {
         #expect(rows.map(\.reason) == ["birakilamaz"])
     }
 
-    @Test("Tanınmayan hata, nedeniyle birlikte hata olarak bildirilir")
+    @Test("An unrecognized error is reported as an error, together with its cause")
     func unknownFailureIsAnError() throws {
         let items = try candidates("hatalı.bin")
         var script = FakeCloud.Script()
@@ -159,7 +159,7 @@ struct EvictTests {
         #expect(result.refused.isEmpty)
     }
 
-    @Test("Durumu okunamayan dosya için istek gönderilmez")
+    @Test("No request is sent for a file whose state cannot be read")
     func unreadableItemIsNotRequested() throws {
         let items = try candidates("okunamaz.bin")
         var script = FakeCloud.Script()
@@ -175,7 +175,7 @@ struct EvictTests {
 
     // MARK: Stopping
 
-    @Test("Doğrulama beklenirken 'Durdur' beklemeyi bitirir")
+    @Test("'Durdur' (Stop) ends the wait while evictions are being confirmed")
     func cancelEndsTheWaitForConfirmation() throws {
         let items = try candidates("bekleyen.bin")
         var script = FakeCloud.Script()
@@ -193,7 +193,7 @@ struct EvictTests {
         #expect(result.stillLocal.count == 0)
     }
 
-    @Test("Başka çalıştırma beklenirken 'Durdur' hiçbir şeye dokunmadan çıkar")
+    @Test("'Durdur' (Stop) while waiting for another run exits without touching anything")
     func cancelWhileWaitingForTheLock() throws {
         let items = try candidates("a.bin")
         let cloud = FakeCloud()
@@ -213,7 +213,7 @@ struct EvictTests {
         _ = run.result(within: 10)
     }
 
-    @Test("İkinci çalıştırma birincinin bitmesini bekler, sonra devam eder")
+    @Test("A second run waits for the first to finish, then continues")
     func secondRunWaitsForTheFirst() throws {
         let items = try candidates("a.bin")
         let cloud = FakeCloud()
@@ -233,7 +233,7 @@ struct EvictTests {
 
     // MARK: Progress
 
-    @Test("İlerleme hiç geri gitmez ve iş bitince tamamlanır")
+    @Test("Progress never goes backward and completes when the job is done")
     func progressNeverGoesBack() throws {
         let items = try (0..<120).map { Candidate(path: try home.file("Desktop/\($0).bin", bytes: 4096), bytes: 4096, isPackage: false) }
         var script = FakeCloud.Script()
@@ -251,7 +251,7 @@ struct EvictTests {
         #expect(fractions.allSatisfy { (0...1).contains($0) })
     }
 
-    @Test("Ölçülecek iş yokken oran bildirilmez", arguments: [
+    @Test("No fraction is reported when there is no work to measure", arguments: [
         Progress.scanning(items: 10, evictableBytes: 1), .waitingForOtherRun, .requesting(done: 0, total: 0),
     ])
     func noFractionWithoutWork(report: Progress) {
@@ -260,7 +260,7 @@ struct EvictTests {
 
     // MARK: Whole run
 
-    @Test("Çalıştırma, taramanın atladıklarını ve bırakılanları aynı kayda yazar")
+    @Test("A run writes what the scan skipped and what was evicted to the same log")
     func runKeepsOneRecord() throws {
         let kept = try home.file("Desktop/yükleniyor.bin", bytes: 8192)
         let gone = try home.file("Desktop/giden.bin", bytes: 4096)
@@ -279,7 +279,7 @@ struct EvictTests {
         #expect(rows.map(\.path) == [kept, gone])
     }
 
-    @Test("Kayıt açılamasa da bırakma yapılır ve neden bildirilir")
+    @Test("Even if the log cannot be opened, eviction goes ahead and the reason is reported")
     func runGoesOnWithoutALog() throws {
         let file = try home.file("Desktop/a.bin", bytes: 4096)
         let blocker = try home.file("engel")
@@ -297,7 +297,7 @@ struct EvictTests {
 
     // MARK: Completeness
 
-    @Test("Her aday bırakıldıysa çalıştırma eksiksizdir")
+    @Test("A run is complete if every candidate was evicted")
     func completeWhenEveryCandidateWasEvicted() {
         var result = EvictResult()
         result.evicted = Tally(count: 3, bytes: 300)
@@ -305,7 +305,7 @@ struct EvictTests {
         #expect(EvictResult().isComplete(of: 0))
     }
 
-    @Test("Bırakılamayan tek aday çalıştırmayı eksik yapar")
+    @Test("A single candidate that could not be evicted makes the run incomplete")
     func incompleteWhenAnythingWasLeft() {
         var refused = EvictResult()
         refused.evicted = Tally(count: 2, bytes: 200)
@@ -320,7 +320,7 @@ struct EvictTests {
 
     // MARK: Verify
 
-    @Test("Doğrulama, bırakılanların bugünkü durumunu bildirir")
+    @Test("Verification reports the current state of the evicted items")
     func verifyReportsWhereEvictedItemsAre() throws {
         let back = try home.file("Desktop/geri inen.bin", bytes: 8192)
         let still = try home.file("Desktop/bulutta.bin", bytes: 4096)

@@ -2,7 +2,7 @@ import Foundation
 import Synchronization
 import Testing
 
-@Suite("Tarama: iCloud durumuna göre")
+@Suite("Scan: by iCloud state")
 struct ScanCloudTests {
     let home: TempHome
 
@@ -12,7 +12,7 @@ struct ScanCloudTests {
         EvictEngine(policy: home.policy, files: cloud.files, hooks: hooks)
     }
 
-    @Test("Yüklenmiş dosyalar diskte kapladıkları yerle aday olur")
+    @Test("Uploaded files become candidates with the space they take up on disk")
     func uploadedFilesAreCandidates() throws {
         let small = try home.file("Desktop/küçük.bin", bytes: 4096)
         let big = try home.file("Desktop/alt/büyük.bin", bytes: 16384)
@@ -27,7 +27,7 @@ struct ScanCloudTests {
         #expect(scan.skips.isEmpty)
     }
 
-    @Test("Yüklenmekte olan dosya aday olmaz")
+    @Test("A file still uploading is not a candidate")
     func uploadingFileIsSkipped() throws {
         let ready = try home.file("Desktop/hazır.bin", bytes: 4096)
         let busy = try home.file("Desktop/yükleniyor.bin", bytes: 8192)
@@ -41,7 +41,7 @@ struct ScanCloudTests {
         #expect(scan.skipped == [SkippedItem(reason: .uploading, path: busy, bytes: 8192)])
     }
 
-    @Test("Paket tek aday olur, boyutu içindekilerin toplamıdır")
+    @Test("A package is a single candidate; its size is the sum of its contents")
     func packageIsOneCandidate() throws {
         try home.file("Desktop/Rapor.rtfd/TXT.rtf", bytes: 4096)
         try home.file("Desktop/Rapor.rtfd/ek/resim.png", bytes: 8192)
@@ -53,7 +53,7 @@ struct ScanCloudTests {
         #expect(cloud.stateReads == [home.desktop + "/Rapor.rtfd"])
     }
 
-    @Test("Hariç paketin içinden yapılan seçim paketin kendisi sayılır", arguments: [
+    @Test("A selection made inside an excluded package counts as the package itself", arguments: [
         "Desktop/Foto.photoslibrary/database/Photos.sqlite",
         "Desktop/Foto.photoslibrary/database",
     ])
@@ -70,7 +70,7 @@ struct ScanCloudTests {
         #expect(cloud.stateReads.isEmpty)
     }
 
-    @Test("Paketin içinden yapılan seçim paketi bütün olarak aday yapar")
+    @Test("A selection made inside a package makes the whole package a candidate")
     func selectionInsidePackage() throws {
         let inner = try home.file("Desktop/Rapor.rtfd/TXT.rtf", bytes: 4096)
         try home.file("Desktop/Rapor.rtfd/ek.bin", bytes: 8192)
@@ -82,7 +82,7 @@ struct ScanCloudTests {
         #expect(scan.inputs == [package])
     }
 
-    @Test("Durumu okunamayan dosya 'iCloud dışı' değil hata olarak bildirilir")
+    @Test("A file whose state cannot be read is reported as an error, not as 'outside iCloud'")
     func unreadableStateIsAnError() throws {
         let locked = try home.file("Desktop/okunamaz.bin", bytes: 4096)
         let fine = try home.file("Desktop/okunur.bin", bytes: 4096)
@@ -96,7 +96,7 @@ struct ScanCloudTests {
         #expect(scan.candidates.map(\.path) == [fine])
     }
 
-    @Test("Yalnız bulutta duran klasörün içine bakılmaz")
+    @Test("A folder that exists only in the cloud is not looked into")
     func cloudOnlyFolderIsNeverListed() throws {
         let folder = try home.folder("Desktop/bulutta")
         let child = try home.file("Desktop/bulutta/içerik.bin", bytes: 4096)
@@ -113,7 +113,7 @@ struct ScanCloudTests {
         #expect(scan.itemsSeen == 1)
     }
 
-    @Test("Yalnız bulutta duran dosya durumu sorulmadan sayılır")
+    @Test("A file that exists only in the cloud is counted without querying its state")
     func cloudOnlyFileIsCountedWithoutAsking() throws {
         let gone = try home.file("Desktop/bulutta.bin", bytes: 4096)
         var script = FakeCloud.Script()
@@ -127,7 +127,7 @@ struct ScanCloudTests {
         #expect(cloud.stateReads.isEmpty)
     }
 
-    @Test("Diskte yer kaplamayan dosya aday olmaz")
+    @Test("A file that takes up no space on disk is not a candidate")
     func emptyFileIsNotACandidate() throws {
         let empty = try home.file("Desktop/boş.txt", bytes: 0)
 
@@ -137,7 +137,7 @@ struct ScanCloudTests {
         #expect(scan.skipped == [SkippedItem(reason: .nothingToFree, path: empty, bytes: 0)])
     }
 
-    @Test("Aynı öğe iki kez seçilirse girdi listesinde bir kez görünür")
+    @Test("An item selected twice appears once in the input list")
     func repeatedInputIsListedOnce() throws {
         let file = try home.file("Desktop/a.bin", bytes: 4096)
 
@@ -147,7 +147,7 @@ struct ScanCloudTests {
         #expect(scan.candidates.count == 1)
     }
 
-    @Test("Durdurulan tarama kalan dosyalara bakmaz")
+    @Test("A stopped scan does not look at the remaining files")
     func cancelledScanStopsLooking() throws {
         for index in 0..<40 { try home.file("Desktop/\(index).bin", bytes: 4096) }
         let cloud = FakeCloud()
@@ -160,7 +160,7 @@ struct ScanCloudTests {
         #expect(scan.itemsSeen > 0)
     }
 
-    @Test("Uzun taramada ilerleme bildirilir")
+    @Test("Progress is reported during a long scan")
     func scanReportsProgress() throws {
         for index in 0..<260 { try home.file("Desktop/\(index).bin", bytes: 4096) }
         let reports = Mutex<[Progress]>([])

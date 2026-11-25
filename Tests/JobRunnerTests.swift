@@ -35,7 +35,7 @@ final class ScriptedUI: JobUI {
     }
 }
 
-@Suite("İş akışı")
+@Suite("Job flow")
 @MainActor
 struct JobRunnerTests {
     let home: TempHome
@@ -59,7 +59,7 @@ struct JobRunnerTests {
         }
     }
 
-    @Test("Onay verilmezse hiçbir dosya bırakılmaz")
+    @Test("Without confirmation no file is evicted")
     func nothingIsEvictedWithoutConsent() async throws {
         try home.file("Desktop/a.bin", bytes: 4096)
         ui.consent = false
@@ -71,7 +71,7 @@ struct JobRunnerTests {
         #expect(!FileManager.default.fileExists(atPath: home.path + "/kayıt"))
     }
 
-    @Test("Onaylanan, taramanın gösterdiği dosyalardır ve sonuç bildirilir")
+    @Test("The files confirmed are the ones the scan showed, and the result is reported")
     func consentEvictsWhatWasShown() async throws {
         let a = try home.file("Desktop/a.bin", bytes: 4096)
         let b = try home.file("Desktop/b.bin", bytes: 8192)
@@ -86,7 +86,7 @@ struct JobRunnerTests {
         #expect(try RunLog.read(log).map(\.action) == ["evicted", "evicted"])
     }
 
-    @Test("Bırakılacak bir şey yoksa onay sorulmaz")
+    @Test("No confirmation is asked for when there is nothing to evict")
     func noQuestionWhenThereIsNothingToEvict() async throws {
         try home.file("Desktop/boş.txt", bytes: 0)
 
@@ -96,7 +96,7 @@ struct JobRunnerTests {
         #expect(cloud.evicted.isEmpty)
     }
 
-    @Test("Tarama durdurulursa onay sorulmaz")
+    @Test("No confirmation is asked for if the scan is stopped")
     func stoppedScanAsksNothing() async throws {
         try home.file("Desktop/a.bin", bytes: 4096)
         ui.stopsDuring = .scanning
@@ -107,7 +107,7 @@ struct JobRunnerTests {
         #expect(cloud.evicted.isEmpty)
     }
 
-    @Test("Bırakma sırasındaki ilerleme ekrana ulaşır")
+    @Test("Progress during eviction reaches the screen")
     func progressReachesTheScreen() async throws {
         for index in 0..<60 { try home.file("Desktop/\(index).bin", bytes: 4096) }
 

@@ -1,9 +1,9 @@
 import Foundation
 import Testing
 
-@Suite("Çalıştırma kaydı")
+@Suite("Run log")
 struct RunLogTests {
-    @Test("Kaçış karakterleri geri çözülür", arguments: ["plain", "tab\tin", "new\nline", "back\\slash\\t", "cr\r", "Ğ/İ\u{0307}"])
+    @Test("Escape characters are decoded back", arguments: ["plain", "tab\tin", "new\nline", "back\\slash\\t", "cr\r", "Ğ/İ\u{0307}"])
     func escapeRoundTrip(text: String) {
         let escaped = RunLog.escape(text)
         #expect(RunLog.unescape(escaped) == text)
@@ -11,7 +11,7 @@ struct RunLogTests {
         #expect(!escaped.contains("\n"))
     }
 
-    @Test("Yazılan kayıtlar aynen okunur")
+    @Test("Written records read back unchanged")
     func writeThenRead() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("runlog-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -25,7 +25,7 @@ struct RunLogTests {
         #expect(rows.map(\.reason) == ["", "yukleniyor"])
     }
 
-    @Test("Sekme ve satır sonu içeren hata metni kaydı bozmaz")
+    @Test("Error text containing tabs and line breaks does not corrupt the log")
     func reasonWithTabsAndNewlinesSurvives() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("runlog-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -39,7 +39,7 @@ struct RunLogTests {
         #expect(rows.map(\.path) == ["/x/a.txt", "/x/b.txt"])
     }
 
-    @Test("Yazılamayan kayıt uygulamayı düşürmez, hatayı bildirir")
+    @Test("A log that cannot be written does not crash the app; it reports the error")
     func failedWriteIsReportedNotFatal() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("runlog-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -56,7 +56,7 @@ struct RunLogTests {
         #expect(!failure.isEmpty)
     }
 
-    @Test("En yeni kayıt dosya adına göre değil yazılma zamanına göre seçilir")
+    @Test("The newest log is chosen by write time, not by file name")
     func latestIsChosenByModificationDate() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("runlog-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -72,12 +72,12 @@ struct RunLogTests {
         #expect(RunLog.latest(in: dir)?.lastPathComponent == "a_yeni.tsv")
     }
 
-    @Test("Kayıt klasörü yoksa en yeni kayıt da yoktur")
+    @Test("With no log folder there is no newest log either")
     func latestOfMissingDirectoryIsNil() {
         #expect(RunLog.latest(in: URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)")) == nil)
     }
 
-    @Test("Kayıt, taramanın dokunmadıklarını nedenleriyle içerir")
+    @Test("The log contains what the scan left untouched, with reasons")
     func recordsWhatTheScanLeftAlone() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("runlog-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }

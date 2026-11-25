@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@Suite("Bırakma kararı")
+@Suite("Eviction decision")
 struct EligibilityTests {
     static let now = Date(timeIntervalSince1970: 1_800_000_000)
 
@@ -20,35 +20,35 @@ struct EligibilityTests {
     }
 
     static let unsafeCases: [UnsafeCase] = [
-        UnsafeCase(testDescription: "bulutta (dataless)", state: uploaded { $0.isDataless = true }, reason: .alreadyEvicted),
-        UnsafeCase(testDescription: "indirilmemiş", state: uploaded { $0.download = .notDownloaded }, reason: .alreadyEvicted),
-        UnsafeCase(testDescription: "iCloud dışı", state: uploaded { $0.isUbiquitous = false }, reason: .notICloud),
-        UnsafeCase(testDescription: "eşitleme dışı", state: uploaded { $0.isExcludedFromSync = true }, reason: .excludedFromSync),
-        UnsafeCase(testDescription: "çakışmalı", state: uploaded { $0.hasConflicts = true }, reason: .conflict),
-        UnsafeCase(testDescription: "yükleniyor", state: uploaded { $0.isUploading = true }, reason: .uploading),
-        UnsafeCase(testDescription: "yüklenmemiş", state: uploaded { $0.isUploaded = false }, reason: .notUploaded),
-        UnsafeCase(testDescription: "iniyor", state: uploaded { $0.isDownloading = true }, reason: .downloading),
-        UnsafeCase(testDescription: "bir dakika önce değişmiş", state: uploaded { $0.modified = now.addingTimeInterval(-60) }, reason: .recentlyModified),
-        UnsafeCase(testDescription: "İndirileni Tut açık", state: uploaded { $0.isPinned = true }, reason: .keepDownloaded),
+        UnsafeCase(testDescription: "in the cloud (dataless)", state: uploaded { $0.isDataless = true }, reason: .alreadyEvicted),
+        UnsafeCase(testDescription: "not downloaded", state: uploaded { $0.download = .notDownloaded }, reason: .alreadyEvicted),
+        UnsafeCase(testDescription: "outside iCloud", state: uploaded { $0.isUbiquitous = false }, reason: .notICloud),
+        UnsafeCase(testDescription: "excluded from sync", state: uploaded { $0.isExcludedFromSync = true }, reason: .excludedFromSync),
+        UnsafeCase(testDescription: "has conflicts", state: uploaded { $0.hasConflicts = true }, reason: .conflict),
+        UnsafeCase(testDescription: "uploading", state: uploaded { $0.isUploading = true }, reason: .uploading),
+        UnsafeCase(testDescription: "not uploaded", state: uploaded { $0.isUploaded = false }, reason: .notUploaded),
+        UnsafeCase(testDescription: "downloading", state: uploaded { $0.isDownloading = true }, reason: .downloading),
+        UnsafeCase(testDescription: "modified a minute ago", state: uploaded { $0.modified = now.addingTimeInterval(-60) }, reason: .recentlyModified),
+        UnsafeCase(testDescription: "Keep Downloaded on", state: uploaded { $0.isPinned = true }, reason: .keepDownloaded),
     ]
 
-    @Test("Yüklenmiş dosya bırakılır", arguments: [ItemState.Download.current, .downloaded])
+    @Test("An uploaded file is evicted", arguments: [ItemState.Download.current, .downloaded])
     func uploadedFileIsEvicted(download: ItemState.Download) {
         #expect(Eligibility.decide(Self.uploaded { $0.download = download }, localBytes: 4096, now: Self.now) == .evict)
     }
 
-    @Test("Güvensiz durum kendi nedeniyle atlanır", arguments: unsafeCases)
+    @Test("An unsafe state is skipped with its own reason", arguments: unsafeCases)
     func unsafeStateIsSkipped(_ c: UnsafeCase) {
         #expect(Eligibility.decide(c.state, localBytes: 4096, now: Self.now) == .skip(c.reason))
     }
 
-    @Test("Yüklenen dosya 'yüklenmedi' değil 'yükleniyor' diye raporlanır")
+    @Test("A file being uploaded is reported as 'uploading', not 'not uploaded'")
     func uploadingWinsOverNotUploaded() {
         let state = Self.uploaded { $0.isUploaded = false; $0.isUploading = true }
         #expect(Eligibility.decide(state, localBytes: 4096, now: Self.now) == .skip(.uploading))
     }
 
-    @Test("Hakkında hiçbir şey bilinmeyen öğe bırakılmaz")
+    @Test("An item nothing is known about is not evicted")
     func unknownItemIsNeverEvicted() {
         #expect(Eligibility.decide(ItemState(), localBytes: 4096, now: Self.now) != .evict)
     }
@@ -64,18 +64,18 @@ struct EligibilityTests {
     static let month: TimeInterval = 30 * 86_400
 
     static let ageCases: [AgeCase] = [
-        AgeCase(testDescription: "bir saat önce değişmiş", modified: -3600, changed: nil, expected: .evict),
-        AgeCase(testDescription: "tam beş dakika önce değişmiş", modified: -300, changed: nil, expected: .evict),
-        AgeCase(testDescription: "beş dakikadan bir saniye az", modified: -299, changed: nil, expected: .skip(.recentlyModified)),
-        AgeCase(testDescription: "gelecek tarihli, bir saat önce dokunulmuş", modified: month, changed: -3600, expected: .evict),
-        AgeCase(testDescription: "gelecek tarihli, bir dakika önce dokunulmuş", modified: month, changed: -60, expected: .skip(.recentlyModified)),
-        AgeCase(testDescription: "gelecek tarihli, dokunulma zamanı bilinmiyor", modified: month, changed: nil, expected: .skip(.ageUnknown)),
-        AgeCase(testDescription: "iki tarih de gelecekte", modified: month, changed: 60, expected: .skip(.ageUnknown)),
-        AgeCase(testDescription: "hiçbir tarih okunamıyor", modified: nil, changed: nil, expected: .skip(.ageUnknown)),
-        AgeCase(testDescription: "değişiklik tarihi yok, bir saat önce dokunulmuş", modified: nil, changed: -3600, expected: .evict),
+        AgeCase(testDescription: "modified an hour ago", modified: -3600, changed: nil, expected: .evict),
+        AgeCase(testDescription: "modified exactly five minutes ago", modified: -300, changed: nil, expected: .evict),
+        AgeCase(testDescription: "one second short of five minutes", modified: -299, changed: nil, expected: .skip(.recentlyModified)),
+        AgeCase(testDescription: "future-dated, touched an hour ago", modified: month, changed: -3600, expected: .evict),
+        AgeCase(testDescription: "future-dated, touched a minute ago", modified: month, changed: -60, expected: .skip(.recentlyModified)),
+        AgeCase(testDescription: "future-dated, touch time unknown", modified: month, changed: nil, expected: .skip(.ageUnknown)),
+        AgeCase(testDescription: "both dates in the future", modified: month, changed: 60, expected: .skip(.ageUnknown)),
+        AgeCase(testDescription: "no date can be read", modified: nil, changed: nil, expected: .skip(.ageUnknown)),
+        AgeCase(testDescription: "no modification date, touched an hour ago", modified: nil, changed: -3600, expected: .evict),
     ]
 
-    @Test("Dosyanın yaşı güvenilir tarihten hesaplanır", arguments: ageCases)
+    @Test("A file's age is computed from a trustworthy date", arguments: ageCases)
     func ageIsTakenFromATrustworthyDate(_ c: AgeCase) {
         let state = Self.uploaded {
             $0.modified = c.modified.map { Self.now.addingTimeInterval($0) }
@@ -84,12 +84,12 @@ struct EligibilityTests {
         #expect(Eligibility.decide(state, localBytes: 4096, now: Self.now) == c.expected)
     }
 
-    @Test("Diskte yer kaplamayan dosya aday olmaz")
+    @Test("A file that takes up no space on disk is not a candidate")
     func nothingToFree() {
         #expect(Eligibility.decide(Self.uploaded(), localBytes: 0, now: Self.now) == .skip(.nothingToFree))
     }
 
-    @Test("iCloud dışı boş dosya 'iCloud dışı' diye raporlanır")
+    @Test("An empty file outside iCloud is reported as 'outside iCloud'")
     func notICloudWinsOverNothingToFree() {
         let state = Self.uploaded { $0.isUbiquitous = false }
         #expect(Eligibility.decide(state, localBytes: 0, now: Self.now) == .skip(.notICloud))

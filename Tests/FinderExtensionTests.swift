@@ -5,9 +5,9 @@ import Testing
 /// Finder sends a menu item's action over XPC, on a queue of its own, never on the main thread
 /// (crash reports of 2026-09-28: `com.apple.NSXPCConnection.user.endpoint`). An action that
 /// insists on the main actor takes the extension down the moment the item is clicked.
-@Suite("Finder uzantısı")
+@Suite("Finder extension")
 struct FinderExtensionTests {
-    @Test("Menü eylemi arka plan kuyruğundan çağrılınca uzantı ayakta kalır",
+    @Test("The extension stays up when a menu action is called from a background queue",
           arguments: ["evictSelection:", "evictFolder:"])
     func actionSurvivesABackgroundQueue(action: String) async {
         let finished: Bool = await withCheckedContinuation { continuation in
@@ -21,7 +21,7 @@ struct FinderExtensionTests {
         #expect(finished)
     }
 
-    @Test("Finder'ın çağırdığı diğer giriş noktaları da arka plan kuyruğunda çalışır")
+    @Test("The other entry points Finder calls also work on a background queue")
     func entryPointsSurviveABackgroundQueue() async {
         let menus: Int = await withCheckedContinuation { continuation in
             DispatchQueue(label: "test.finder.xpc").async {

@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@Suite("Tarama")
+@Suite("Scan")
 struct ScanTests {
     let home: TempHome
     let engine: EvictEngine
@@ -11,7 +11,7 @@ struct ScanTests {
         engine = EvictEngine(policy: home.policy)
     }
 
-    @Test("Klasördeki her dosya bir kez değerlendirilir")
+    @Test("Every file in a folder is evaluated once")
     func everyFileIsSeenOnce() throws {
         try home.file("Desktop/a.bin")
         try home.file("Desktop/alt/b.bin")
@@ -25,7 +25,7 @@ struct ScanTests {
         #expect(scan.errors.isEmpty)
     }
 
-    @Test("Finder üst verisi ve eski yer tutucular sayılmaz")
+    @Test("Finder metadata and legacy placeholders are not counted")
     func metadataFilesAreIgnored() throws {
         try home.file("Desktop/.DS_Store")
         try home.file("Desktop/Icon\r")
@@ -38,7 +38,7 @@ struct ScanTests {
         #expect(scan.skipped.map(\.path) == [home.desktop + "/gerçek.pdf"])
     }
 
-    @Test("Çöp ve sistem klasörlerinin içine girilmez")
+    @Test("Trash and system folders are not entered")
     func systemFoldersAreNotEntered() throws {
         try home.file("Desktop/.Trash/silinmiş.bin")
         try home.file("Desktop/.Spotlight-V100/dizin.bin")
@@ -49,7 +49,7 @@ struct ScanTests {
         #expect(scan.skipped.map(\.path) == [home.desktop + "/kalan.bin"])
     }
 
-    @Test("Hariç paket bütün olarak atlanır, içine girilmez")
+    @Test("An excluded package is skipped as a whole and not entered")
     func excludedPackageIsSkippedWhole() throws {
         try home.file("Desktop/Foto.photoslibrary/database/Photos.sqlite", bytes: 4096)
         try home.file("Desktop/Foto.photoslibrary/originals/1.heic", bytes: 4096)
@@ -62,7 +62,7 @@ struct ScanTests {
         #expect(scan.skipped.first?.bytes == 8192)
     }
 
-    @Test("İzinli konumların dışındaki yol taranmaz")
+    @Test("A path outside the allowed locations is not scanned")
     func pathOutsideRootsIsNotScanned() throws {
         let outside = try home.file("Downloads/x.bin")
 
@@ -73,7 +73,7 @@ struct ScanTests {
         #expect(scan.inputs.isEmpty)
     }
 
-    @Test("Notability klasörü gezilmeden atlanır")
+    @Test("The Notability folder is skipped without being walked")
     func selfDownloadingContainerIsNotWalked() throws {
         let folder = try home.folder("Library/Mobile Documents/ZP9ZJ4EF3S~com~gingerlabs~Notability/Documents")
         try home.file("Library/Mobile Documents/ZP9ZJ4EF3S~com~gingerlabs~Notability/Documents/Not.nbn/Session.plist", bytes: 4096)
@@ -85,7 +85,7 @@ struct ScanTests {
         #expect(scan.skipped.first?.bytes == 4096)
     }
 
-    @Test("Aynı öğe iki kez seçilse de bir kez sayılır")
+    @Test("An item is counted once even if selected twice")
     func overlappingSelectionsCountOnce() throws {
         let file = try home.file("Desktop/alt/a.bin")
         try home.file("Desktop/alt/b.bin")
@@ -96,7 +96,7 @@ struct ScanTests {
         #expect(scan.skips[.notICloud]?.count == 2)
     }
 
-    @Test("Var olmayan yol hata olarak bildirilir")
+    @Test("A nonexistent path is reported as an error")
     func missingPathIsAnError() {
         let scan = engine.scan([home.desktop + "/yok.bin"])
 
@@ -104,7 +104,7 @@ struct ScanTests {
         #expect(scan.itemsSeen == 0)
     }
 
-    @Test("Masaüstü kısayolu (symlink) izlenmez")
+    @Test("A Desktop shortcut (symlink) is not followed")
     func symlinksAreNotFollowed() throws {
         let target = try home.folder("Documents/hedef")
         try home.file("Documents/hedef/a.bin")

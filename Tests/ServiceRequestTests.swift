@@ -4,7 +4,7 @@ import Testing
 /// The Services entry is wired by name: Info.plist names a message, AppKit builds a selector from
 /// it and calls the services provider. A name that drifts fails silently: the menu item stays and
 /// does nothing.
-@Suite("Servis")
+@Suite("Service")
 struct ServiceRequestTests {
     private static let infoPlist = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("App/Info.plist")
@@ -14,7 +14,7 @@ struct ServiceRequestTests {
         return (plist as? [String: Any])?["NSServices"] as? [[String: Any]] ?? []
     }
 
-    @Test("Info.plist'teki servis, uygulamanın yanıt verdiği iletiyi adlandırır")
+    @Test("The service in Info.plist names the message the app responds to")
     @MainActor func messageMatchesTheDelegate() throws {
         let service = try #require(try services().first)
         #expect(try services().count == 1)
@@ -22,7 +22,7 @@ struct ServiceRequestTests {
         #expect(AppDelegate(downloadProtection: true).responds(to: ServiceRequest.selector))
     }
 
-    @Test("Servis her dosya ve klasör için, yalnız Finder'da sunulur")
+    @Test("The service is offered for every file and folder, only in Finder")
     func offeredForEveryItemInFinder() throws {
         let service = try #require(try services().first)
         #expect(service["NSSendFileTypes"] as? [String] == ["public.item"])
@@ -31,7 +31,7 @@ struct ServiceRequestTests {
         #expect((service["NSRequiredContext"] as? [String: String])?["NSApplicationIdentifier"] == "com.apple.finder")
     }
 
-    @Test("Panodaki dosya URL'leri yola çevrilir, dosya olmayanlar atlanır")
+    @Test("File URLs on the pasteboard are turned into paths; non-files are skipped")
     func pathsFromThePasteboard() throws {
         let home = try TempHome()
         let file = URL(fileURLWithPath: try home.file("Desktop/a b.txt"))
@@ -45,7 +45,7 @@ struct ServiceRequestTests {
         #expect(ServiceRequest.paths(on: pasteboard) == [file.path, folder.path])
     }
 
-    @Test("Boş panodan yol çıkmaz")
+    @Test("An empty pasteboard yields no paths")
     func emptyPasteboard() {
         let pasteboard = NSPasteboard.withUniqueName()
         defer { pasteboard.releaseGlobally() }
