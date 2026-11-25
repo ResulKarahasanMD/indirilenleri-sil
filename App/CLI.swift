@@ -1,10 +1,10 @@
 import Foundation
 
 /// Command-line mode of the same binary:
-///   IndirilenleriSil --dry-run <yol…>     tara, özet yaz (hiçbir şey bırakılmaz)
-///   IndirilenleriSil --list <yol…>        tara, aday ve atlanan yolları da yaz
-///   IndirilenleriSil --evict <yol…>       tara + bırak, kayıt tut
-///   IndirilenleriSil --verify <kayıt|last>  bırakılanlar hâlâ bulutta mı
+///   IndirilenleriSil --dry-run <yol…>     scan, print a summary (nothing is evicted)
+///   IndirilenleriSil --list <yol…>        scan, also print candidate and skipped paths
+///   IndirilenleriSil --evict <yol…>       scan + evict, keep a log
+///   IndirilenleriSil --verify <kayıt|last>  are the evicted items still in the cloud
 ///
 /// Exit status: 0 everything asked for was done; 1 something was left or could not be read;
 /// 2 (--verify) evicted items have come back; 64 wrong usage.
