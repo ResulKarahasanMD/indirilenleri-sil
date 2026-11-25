@@ -21,9 +21,9 @@ codesign -v --deep --strict "$BUILT"
 
 # Replace only our own previous install.
 if [[ -e "$DEST" ]]; then
-  [[ "$(plutil -extract CFBundleIdentifier raw "$DEST/Contents/Info.plist")" == "$BUNDLE_ID" ]] || { print -u2 "$DEST başka bir uygulama; dokunulmadı"; exit 1; }
+  [[ "$(plutil -extract CFBundleIdentifier raw "$DEST/Contents/Info.plist")" == "$BUNDLE_ID" ]] || { print -u2 "$DEST is a different app; left untouched"; exit 1; }
   if pgrep -x IndirilenleriSil >/dev/null; then
-    print -u2 "İndirilenleri Sil şu an çalışıyor (bir iş sürüyor olabilir); bitince tekrar deneyin."; exit 1
+    print -u2 "İndirilenleri Sil is running right now (a job may be in progress); try again when it has finished."; exit 1
   fi
   rm -rf "$DEST"
 fi
@@ -43,13 +43,13 @@ for attempt in 1 2 3; do
   pluginkit -e use -i "$EXT_ID"
   sleep 5
   registered && break
-  print -u2 "uzantı kaydı tutmadı, tekrar ($attempt)"
+  print -u2 "extension registration did not stick, retrying ($attempt)"
 done
-registered || { print -u2 "HATA: Finder uzantısı tek ve kurulu kopya olarak kayıtlı değil:"; registered_paths >&2; exit 1; }
+registered || { print -u2 "ERROR: the Finder extension is not registered as a single, installed copy:"; registered_paths >&2; exit 1; }
 
 # The extension reaches the app through its URL scheme: that, too, must lead to the installed copy.
 handler=$(osascript -l JavaScript -e 'ObjC.import("AppKit"); var u = $.NSWorkspace.sharedWorkspace.URLForApplicationToOpenURL($.NSURL.URLWithString("indirilenlerisil://x")); u.isNil() ? "" : ObjC.unwrap(u.path)')
-[[ "$handler" == "$DEST" ]] || { print -u2 "HATA: indirilenlerisil:// şemasını başka bir kopya açıyor: ${handler:-yok}"; exit 1; }
+[[ "$handler" == "$DEST" ]] || { print -u2 "ERROR: another copy opens the indirilenlerisil:// scheme: ${handler:-none}"; exit 1; }
 
-print "kuruldu: $DEST"
+print "installed: $DEST"
 pluginkit -mAv -i "$EXT_ID"
