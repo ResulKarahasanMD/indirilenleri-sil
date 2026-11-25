@@ -1,0 +1,87 @@
+name: IndirilenleriSil
+options:
+  deploymentTarget:
+    macOS: "27.0.1"
+  developmentLanguage: tr
+configFiles:
+  Debug: Config/Shared.xcconfig
+  Release: Config/Shared.xcconfig
+targets:
+  IndirilenleriSil:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+        excludes: ["*.entitlements", "Info.plist"]
+      - Core
+    settings:
+      base:
+        PRODUCT_NAME: IndirilenleriSil
+        PRODUCT_BUNDLE_IDENTIFIER: com.rak.indirilenlerisil
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: App/App.entitlements
+    dependencies:
+      - target: FinderExt
+        embed: true
+        codeSign: true
+  FinderExt:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: FinderExt
+        excludes: ["*.entitlements", "Info.plist"]
+      - Core/IPC.swift
+      - Core/Log.swift
+      - Core/PathPolicy.swift
+    settings:
+      base:
+        PRODUCT_NAME: FinderExt
+        PRODUCT_BUNDLE_IDENTIFIER: com.rak.indirilenlerisil.FinderExt
+        INFOPLIST_FILE: FinderExt/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: FinderExt/FinderExt.entitlements
+  CoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests
+      - Core
+      # Parts of the app that do not need AppKit: tested with the core.
+      - App/Startup.swift
+      - App/CLI.swift
+      - App/Report.swift
+      - App/FinderSelection.swift
+      - App/JobRunner.swift
+      # The Services entry: Info.plist names a method the delegate has to have.
+      - App/ServiceRequest.swift
+      - App/AppDelegate.swift
+      # The windows: they have to show while the app is in the background.
+      - App/JobWindow.swift
+      - App/Notifier.swift
+      # The extension's entry points: Finder calls them from its own queues.
+      - FinderExt/FinderSync.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rak.indirilenlerisil.CoreTests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        DEVELOPMENT_TEAM: ""
+        ENABLE_HARDENED_RUNTIME: NO
+schemes:
+  IndirilenleriSil:
+    build:
+      targets:
+        IndirilenleriSil: all
+    run:
+      config: Release
+    archive:
+      config: Release
+  CoreTests:
+    build:
+      targets:
+        CoreTests: [test]
+    test:
+      config: Debug
+      targets: [CoreTests]

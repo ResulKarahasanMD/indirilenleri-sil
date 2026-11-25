@@ -1,0 +1,16 @@
+// Signing: stable Developer ID identity so TCC grants and the Finder extension switch survive rebuilds.
+DEVELOPMENT_TEAM = 3V5WCZ8D9T
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = Developer ID Application
+PROVISIONING_PROFILE_SPECIFIER =
+CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO
+OTHER_CODE_SIGN_FLAGS = --timestamp=none
+ENABLE_HARDENED_RUNTIME = YES
+MACOSX_DEPLOYMENT_TARGET = 27.0.1
+// Swift 6 language mode: data-race safety is checked by the compiler, not by convention.
+SWIFT_VERSION = 6.0
+MARKETING_VERSION = 1.0
+CURRENT_PROJECT_VERSION = 1
+
+// Written by scripts/build-install.sh (random per checkout); shared by app and extension.
+#include? "Token.xcconfig"
